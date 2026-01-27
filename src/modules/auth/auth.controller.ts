@@ -28,7 +28,11 @@ export const login = async (req: Request, res: Response) => {
         const result = await authServices.loginUser(data);
         return res.status(200).json({
             message: 'Login successful',
-            user: result
+            token: result.token,
+            user: {
+                id: result.id,
+                email: result.email
+            }
         });
     } catch (error) {
         if (error instanceof AppError) {
