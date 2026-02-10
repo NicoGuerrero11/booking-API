@@ -28,19 +28,29 @@ export const createBooking = async (req: Request, res: Response) => {
 
 
 export const getBooking = async (req: Request, res: Response) => {
-    if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
     try {
+        // @ts-ignore - el middleware authMiddleware agrega req.user
         const userId = req.user.id;
-        const bookings = await bookingService.getBooking(userId);
-        return res.status(200).json({
-            message: 'Bookings retrieved successfully',
-            bookings
+
+        // Extraer parámetros de query
+        const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+        const status = req.query.status as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | undefined;
+
+        const result = await bookingService.getBooking({
+            userId,
+            page,
+            limit,
+            status
         });
 
-    } catch (error) {
-        return res.status(500).json({ message: 'Internal server error' });
+        res.status(200).json(result);
+    } catch (error: any) {
+        console.error('Error al obtener reservas:', error);
+        res.status(500).json({
+            message: 'Error al obtener reservas',
+            error: error.message,
+        });
     }
 };
 

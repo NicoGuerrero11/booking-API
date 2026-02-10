@@ -19,17 +19,30 @@ export const addNewRoom = async (req: Request, res: Response) => {
 
 export const getAllRooms = async (req: Request, res: Response) => {
     try {
-        const rooms = await roomsServices.getAllRooms();
-        return res.status(200).json({
-            message: 'Rooms retrieved successfully',
-            data: rooms,
+        // Extraer parámetros de query
+        const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+        const type = req.query.type as 'Normal' | 'VIP' | 'Presidential' | undefined;
+        const available = req.query.available === 'true' ? true :
+            req.query.available === 'false' ? false :
+                undefined;
+
+        const result = await roomsServices.getAllRooms({
+            page,
+            limit,
+            type,
+            available
         });
-    } catch (error) {
-        return res.status(500).json({
-            message: 'Internal server error',
+
+        res.status(200).json(result);
+    } catch (error: any) {
+        console.error('Error al obtener habitaciones:', error);
+        res.status(500).json({
+            message: 'Error al obtener habitaciones',
+            error: error.message,
         });
     }
-}
+};
 
 export const getRoom = async (req: Request, res: Response) => {
     try {

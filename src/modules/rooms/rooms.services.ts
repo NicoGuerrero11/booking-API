@@ -1,7 +1,23 @@
 import { CreateRoomDTO } from './schemas/CreateRoomSchema';
 import { db } from '../../db/db';
 import { rooms } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, count, and } from 'drizzle-orm';
+
+interface PaginationParams {
+    page?: number | undefined;
+    limit?: number | undefined;
+    type?: 'Normal' | 'VIP' | 'Presidential' | undefined;
+    available?: boolean | undefined;
+}
+interface PaginatedResponse<T> {
+    data: T[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
 
 export const roomsServices = {
 
@@ -28,12 +44,49 @@ export const roomsServices = {
     },
 
     // get all rooms
-    getAllRooms: async () => {
-        const allRooms = await db
+    getAllRooms: async (
+        params: PaginationParams = {}
+    ): Promise<PaginatedResponse<typeof rooms.$inferSelect>> => {
+        // Valores por defecto
+        const page = params.page && params.page > 0 ? params.page : 1;
+        const limit = params.limit && params.limit > 0 && params.limit <= 100 ? params.limit : 10;
+        const offset = (page - 1) * limit;
+
+        // Construir filtros dinámicos
+        const filters = [];
+        if (params.type) {
+            filters.push(eq(rooms.type, params.type));
+        }
+        if (params.available !== undefined) {
+            filters.push(eq(rooms.is_available, params.available));
+        }
+
+        // Obtener total de registros (para calcular páginas)
+        const [totalResult] = await db
+            .select({ count: count() })
+            .from(rooms)
+            .where(filters.length > 0 ? and(...filters) : undefined);
+
+        const total = totalResult?.count ?? 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Obtener datos paginados
+        const data = await db
             .select()
             .from(rooms)
+            .where(filters.length > 0 ? and(...filters) : undefined)
+            .limit(limit)
+            .offset(offset);
 
-        return allRooms;
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+            },
+        };
     },
 
     // get room by id

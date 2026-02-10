@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import request from "supertest";
-import { app } from "../app";
+import app from "../app";
 
 describe("Auth middleware", () => {
     it("debe regresar 401 si no hay token", async () => {
@@ -13,7 +13,7 @@ describe("Auth middleware", () => {
 
     it("debe permitir registro y login, obteniendo token válido", async () => {
         const uniqueEmail = `test${Date.now()}@mail.com`;
-        
+
         // 1) Registrar usuario
         const registerRes = await request(app).post("/api/auth/register").send({
             name: "Test User",
@@ -33,7 +33,7 @@ describe("Auth middleware", () => {
 
         expect(loginRes.status).toBe(200);
         expect(loginRes.body).toHaveProperty("token");
-        
+
         const token = loginRes.body.token;
         expect(token).toBeTruthy();
         expect(typeof token).toBe("string");
@@ -44,8 +44,8 @@ describe("Auth middleware", () => {
             .set("Authorization", `Bearer ${token}`);
 
         expect(res.status).toBe(200);
-        expect(res.body).toHaveProperty("bookings");
-        expect(Array.isArray(res.body.bookings)).toBe(true);
+        expect(res.body).toHaveProperty("data");
+        expect(Array.isArray(res.body.data)).toBe(true);
     });
 
     it("debe rechazar token inválido", async () => {

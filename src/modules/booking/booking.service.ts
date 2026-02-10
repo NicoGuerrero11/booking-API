@@ -1,11 +1,27 @@
 import { db } from '../../db/db'
 import { bookings, rooms } from '../../db/schema'
 import { CreateBookingDTO } from './schemas/CreateBooking'
-import { and, lt, gt, eq, ne, or } from 'drizzle-orm'
+import { and, lt, gt, eq, ne, count, desc } from 'drizzle-orm'
 import { ConflictError, NotFoundError } from '../../utils/errors'
 
 type CurrentUser = { id: number, isAdmin: boolean }
 
+// Interfaces para paginación
+interface BookingPaginationParams {
+    userId: number;
+    page?: number | undefined;
+    limit?: number | undefined;
+    status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | undefined;
+}
+interface PaginatedResponse<T> {
+    data: T[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
 
 export const bookingService = {
     createBooking: async (userId: number, bookingData: CreateBookingDTO) => {
@@ -46,29 +62,47 @@ export const bookingService = {
         return newBooking;
     },
 
-    getBooking: async (userId: number) => {
-        const userBookings = await db
-            .select({
-                id: bookings.id,
-                room: {
-                    id: rooms.id,
-                    name: rooms.name,
-                    type: rooms.type
-                },
-                start_date: bookings.start_date,
-                end_date: bookings.end_date,
-                status: bookings.status
-            })
-            .from(bookings)
-            .innerJoin(rooms, eq(bookings.room_id, rooms.id))
-            .where(
-                and(
-                    eq(bookings.user_id, userId),
-                    ne(bookings.status, 'CANCELLED')
-                )
-            );
-        return userBookings;
+    getBooking: async (
+        params: BookingPaginationParams
+    ): Promise<PaginatedResponse<typeof bookings.$inferSelect>> => {
+        // Valores por defecto
+        const page = params.page && params.page > 0 ? params.page : 1;
+        const limit = params.limit && params.limit > 0 && params.limit <= 100 ? params.limit : 10;
+        const offset = (page - 1) * limit;
 
+        // Construir filtros
+        const filters = [eq(bookings.user_id, params.userId)];
+        if (params.status) {
+            filters.push(eq(bookings.status, params.status));
+        }
+
+        // Obtener total
+        const [totalResult] = await db
+            .select({ count: count() })
+            .from(bookings)
+            .where(and(...filters));
+
+        const total = totalResult?.count ?? 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Obtener datos paginados (ordenados por fecha de creación, más recientes primero)
+        const data = await db
+            .select()
+            .from(bookings)
+            .where(and(...filters))
+            .orderBy(desc(bookings.created_at))
+            .limit(limit)
+            .offset(offset);
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages,
+            },
+        };
     },
 
     cancelBooking: async (bookingId: number, user: CurrentUser) => {
