@@ -71,13 +71,31 @@ DATABASE_URL=postgresql://usuario:password@host/database?sslmode=require
 JWT_SECRET=tu_clave_secreta_muy_segura
 ```
 
+## 🗄️ Base de Datos
+
+Este proyecto utiliza **[Neon](https://neon.tech)** - PostgreSQL Serverless.
+
+### ¿Por qué Neon?
+
+- ✅ **Serverless**: Sin necesidad de administrar servidores
+- ✅ **Escalado automático**: Se adapta a la carga
+- ✅ **Setup instantáneo**: Base de datos lista en segundos
+- ✅ **Free tier generoso**: Perfecto para desarrollo y demos
+- ✅ **Branching**: Crea ramas de tu DB como en Git
+
 ### Obtener DATABASE_URL de Neon:
 
 1. Crea un proyecto en [Neon](https://neon.tech/)
 2. Copia la cadena de conexión desde el dashboard
 3. Pégala en tu archivo `.env`
 
-## 🗄️ Base de datos
+```
+   DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require
+``` 
+5. Push del schema:
+```bash
+   pnpm db:push
+```
 
 ### Esquema actual
 
