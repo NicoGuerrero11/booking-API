@@ -2,7 +2,7 @@
 
 API RESTful para gestión de reservas de habitaciones de hotel, construida con Node.js, Express, TypeScript y PostgreSQL.
 
-## 🚀 Características
+## ✨ Características Principales
 
 - ✅ **Documentación interactiva** con Swagger/OpenAPI
 - ✅ **Paginación** en listados de habitaciones y reservas
@@ -14,7 +14,7 @@ API RESTful para gestión de reservas de habitaciones de hotel, construida con N
 - ✅ **Validación de fechas** con detección de solapamiento
 - ✅ **TypeScript** con hot reload
 
-## 🛠️ Tecnologías
+## 🛠️ Stack Tecnológico
 
 | Categoría | Tecnología |
 |-----------|------------|
@@ -29,50 +29,185 @@ API RESTful para gestión de reservas de habitaciones de hotel, construida con N
 | **Testing** | Jest + Supertest |
 | **Package Manager** | pnpm |
 
-## 📋 Requisitos previos
+## 🏗️ Arquitectura
 
-Antes de comenzar, asegúrate de tener instalado:
+### Diagrama de Flujo
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      BOOKING API                            │
+│                    Arquitectura REST                        │
+└─────────────────────────────────────────────────────────────┘
 
-- [Node.js](https://nodejs.org/) (v18 o superior)
-- [pnpm](https://pnpm.io/) (v10.20.0 o superior)
-- Una cuenta en [Neon](https://neon.tech/) para la base de datos PostgreSQL
-
-## 📦 Instalación
-
-1. Clona el repositorio:
-```bash
-git clone <tu-repositorio>
-cd booking-api
+                         ┌──────────────┐
+                         │   Cliente    │
+                         │  (Browser/   │
+                         │   Postman)   │
+                         └──────┬───────┘
+                                │
+                         HTTP/JSON
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │   Express Server      │
+                    │   (Port 3000)         │
+                    │                       │
+                    │  Middleware Stack:    │
+                    │  ├─ express.json()    │
+                    │  ├─ CORS              │
+                    │  ├─ authMiddleware    │
+                    │  ├─ roleMiddleware    │
+                    │  └─ validateBody      │
+                    └───────────┬───────────┘
+                                │
+                ┌───────────────┼───────────────┐
+                │               │               │
+                ▼               ▼               ▼
+        ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+        │    Auth      │ │    Rooms     │ │   Bookings   │
+        │   Module     │ │   Module     │ │    Module    │
+        │              │ │              │ │              │
+        │ • Register   │ │ • List (GET) │ │ • Create     │
+        │ • Login      │ │ • Create     │ │ • List       │
+        │ • JWT Gen    │ │ • Update     │ │ • Cancel     │
+        │              │ │ • Delete     │ │ • Validate   │
+        └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+               │                │                │
+               └────────────────┼────────────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │    Drizzle ORM        │
+                    │                       │
+                    │  • Query Builder      │
+                    │  • Type Safety        │
+                    │  • Migrations         │
+                    └───────────┬───────────┘
+                                │
+                         PostgreSQL
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │   Neon PostgreSQL     │
+                    │   (Serverless)        │
+                    │                       │
+                    │  Tables:              │
+                    │  ├─ users             │
+                    │  ├─ rooms             │
+                    │  └─ bookings          │
+                    └───────────────────────┘
 ```
 
-2. Instala las dependencias:
+### Flujo de Request
+
+**1. Request Incoming**
+```
+Cliente → HTTP Request → Express Server
+```
+
+**2. Middleware Processing**
+```
+Request → JSON Parser → CORS → Auth Verify → Role Check → Validation
+```
+
+**3. Business Logic**
+```
+Controller → Service Layer → Business Rules
+```
+
+**4. Database Access**
+```
+Service → Drizzle ORM → SQL Query → Neon PostgreSQL
+```
+
+**5. Response**
+```
+Database → ORM → Service → Controller → JSON Response → Cliente
+```
+
+### Ejemplo: Crear una Reserva
+```
+1. POST /api/bookings
+   ↓
+2. authMiddleware verifica JWT ✅
+   ↓
+3. validateBody verifica datos con Zod ✅
+   ↓
+4. booking.controller recibe request
+   ↓
+5. booking.service.createBooking()
+   ├─ Verifica que habitación existe
+   ├─ Verifica disponibilidad
+   ├─ Detecta solapamiento de fechas
+   └─ Crea reserva
+   ↓
+6. Drizzle ORM ejecuta INSERT
+   ↓
+7. Neon PostgreSQL guarda en DB
+   ↓
+8. Response: { booking: {...}, message: "..." }
+```
+
+### Características por Capa
+
+**🔐 Seguridad**
+- JWT con expiración de 7 días
+- Contraseñas hasheadas con Argon2
+- Middleware de roles (Admin/Usuario)
+- Validación de entrada con Zod
+
+**🚀 Performance**
+- Paginación en endpoints de listado
+- Índices en columnas frecuentes
+- Connection pooling con Neon
+
+**🧪 Calidad**
+- 14 tests automatizados
+- Cobertura de casos críticos
+- Validación de solapamiento de fechas
+
+**📚 Documentación**
+- Swagger UI interactiva
+- Ejemplos en cada endpoint
+- Schemas reutilizables
+
+## 📋 Requisitos Previos
+
+- [Node.js](https://nodejs.org/) v18 o superior
+- [pnpm](https://pnpm.io/) v10.20.0 o superior
+- Cuenta en [Neon](https://neon.tech/) (PostgreSQL serverless)
+
+## 🚀 Inicio Rápido
+
+### 1. Clonar e instalar
 ```bash
+git clone https://github.com/NicoGuerrero11/booking-API.git
+cd booking-API
 pnpm install
 ```
 
-3. Crea un archivo `.env` en la raíz del proyecto:
+### 2. Configurar variables de entorno
 ```bash
-touch .env
+cp .env.example .env
 ```
 
-4. Configura las variables de entorno (ver sección de Configuración)
-
-## ⚙️ Configuración
-
-Agrega las siguientes variables de entorno en tu archivo `.env`:
-
+Edita `.env` con tus credenciales:
 ```env
-# Servidor
 PORT=3000
-
-# Base de datos
-DATABASE_URL=postgresql://usuario:password@host/database?sslmode=require
-
-# JWT
-JWT_SECRET=tu_clave_secreta_muy_segura
+DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require
+JWT_SECRET=your-super-secret-jwt-key-change-this
 ```
 
-### Explorar la API
+### 3. Inicializar base de datos
+```bash
+pnpm db:push
+```
+
+### 4. Iniciar servidor
+```bash
+pnpm dev
+```
+
+### 5. Explorar la API
 
 - **API Base**: http://localhost:3000
 - **Swagger Docs**: http://localhost:3000/api-docs 📚
@@ -101,35 +236,28 @@ Inicia el servidor y visita: **http://localhost:3000/api-docs**
 3. **Autorizar**: Click en "Authorize" 🔒 → Pegar token
 4. **Probar endpoints protegidos**: GET `/api/bookings`, POST `/api/rooms`, etc.
 
-
 ## 🗄️ Base de Datos
 
-Este proyecto utiliza **[Neon](https://neon.tech)** - PostgreSQL Serverless.
+### PostgreSQL con Neon
 
-### ¿Por qué Neon?
+Este proyecto usa **[Neon](https://neon.tech)** - PostgreSQL Serverless.
 
-- ✅ **Serverless**: Sin necesidad de administrar servidores
-- ✅ **Escalado automático**: Se adapta a la carga
-- ✅ **Setup instantáneo**: Base de datos lista en segundos
-- ✅ **Free tier generoso**: Perfecto para desarrollo y demos
-- ✅ **Branching**: Crea ramas de tu DB como en Git
+**¿Por qué Neon?**
+- ✅ Serverless (sin administrar servidores)
+- ✅ Escalado automático
+- ✅ Setup en segundos
+- ✅ Free tier generoso (512 MB, 10 branches)
+- ✅ Branching (como Git pero para tu DB)
 
-### Obtener DATABASE_URL de Neon:
+### Obtener DATABASE_URL
 
-1. Crea un proyecto en [Neon](https://neon.tech/)
-2. Copia la cadena de conexión desde el dashboard
-3. Pégala en tu archivo `.env`
+1. Crea cuenta en [Neon](https://neon.tech)
+2. Crea un proyecto
+3. Copia la connection string
+4. Pégala en `.env`
+5. Ejecuta `pnpm db:push`
 
-```
-   DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require
-``` 
-5. Push del schema:
-```bash
-   pnpm db:push
-```
-
-### Esquema actual
-
+### Schema
 ```sql
 users
 ├─ id (serial, PK)
@@ -154,7 +282,7 @@ bookings
 ├─ status (enum: PENDING, CONFIRMED, CANCELLED)
 └─ created_at (timestamp)
 ```
-## 🚀 Uso
+
 ## 🔌 API Endpoints
 
 ### 📖 Autenticación
@@ -163,7 +291,6 @@ bookings
 |--------|------|-------------|------|
 | POST | `/api/auth/register` | Registrar nuevo usuario | No |
 | POST | `/api/auth/login` | Iniciar sesión (retorna JWT) | No |
-| GET | `/api/auth/me` | Obtener usuario actual | Sí |
 
 ### 🏠 Habitaciones
 
@@ -266,21 +393,19 @@ Tests:       14 passed, 14 total
   - Reservas consecutivas
   - Autenticación
 
-## 📜 Scripts disponibles
-
+## 📜 Scripts Disponibles
 ```bash
 pnpm dev          # Desarrollo con hot reload
 pnpm build        # Compilar TypeScript
 pnpm start        # Iniciar en producción
 pnpm test         # Ejecutar tests
 pnpm db:push      # Aplicar schema a DB
-pnpm db:studio    # Abrir Drizzle Studio (GUI)
 pnpm db:generate  # Generar migraciones desde el esquema
 pnpm db:migrate   # Aplicar migraciones a la DB
+pnpm db:studio    # Abrir Drizzle Studio (GUI)
 ```
 
-## 📁 Estructura del proyecto
-
+## 📁 Estructura del Proyecto
 ```
 booking-API/
 ├── src/
@@ -331,15 +456,11 @@ booking-API/
 - ✅ Validación de datos con **Zod**
 - 🛡️ Middleware de roles (Admin/Usuario)
 
-
 ## 🔗 Enlaces Útiles
 
 - [Swagger Docs](http://localhost:3000/api-docs) - Documentación interactiva
 - [Neon Console](https://console.neon.tech/) - Administrar tu DB
 - [Drizzle Studio](https://orm.drizzle.team/drizzle-studio/overview) - GUI para DB
-
-
-
 
 ## 📝 Licencia
 
