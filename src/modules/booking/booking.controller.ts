@@ -15,7 +15,8 @@ export const createBooking = async (req: Request, res: Response) => {
         const newBooking = await bookingService.createBooking(id, bookingData);
         return res.status(201).json({
             message: 'Booking created successfully',
-            newBooking
+            booking: newBooking
+
         });
     } catch (error) {
         if (error instanceof AppError) {

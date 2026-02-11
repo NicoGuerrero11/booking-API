@@ -27,6 +27,16 @@ export const bookingService = {
     createBooking: async (userId: number, bookingData: CreateBookingDTO) => {
         const { room_id, start_date, end_date } = bookingData;
 
+        const roomsExist = await db
+            .select({ id: rooms.id })
+            .from(rooms)
+            .where(eq(rooms.id, room_id))
+            .limit(1);
+
+        if (roomsExist.length === 0) {
+            throw new NotFoundError('The specified room does not exist.');
+        }
+
         const overLapping = await db
             .select({ id: bookings.id })
             .from(bookings)
@@ -43,6 +53,8 @@ export const bookingService = {
         if (overLapping.length > 0) {
             throw new ConflictError('The room is already booked for the selected dates.');
         }
+
+
         const [newBooking] = await db
             .insert(bookings)
             .values({
@@ -54,6 +66,7 @@ export const bookingService = {
             })
             .returning({
                 id: bookings.id,
+                room_id: bookings.room_id,
                 start_date: bookings.start_date,
                 end_date: bookings.end_date,
                 status: bookings.status
