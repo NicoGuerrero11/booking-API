@@ -4,29 +4,30 @@ API RESTful para gestión de reservas de habitaciones de hotel, construida con N
 
 ## 🚀 Características
 
-- ✅ Servidor Express con TypeScript
-- ✅ Base de datos PostgreSQL con Neon
-- ✅ ORM Drizzle para manejo de base de datos
-- ✅ Migraciones de base de datos
-- ✅ Variables de entorno con dotenv
-- ✅ Hot reload en desarrollo con tsx
-- ✅ Autenticación JWT con Argon2
-- ✅ Sistema de roles (Admin/Usuario)
-- ✅ Validación de datos con Zod
-- ✅ CRUD completo de habitaciones
-- ✅ Sistema de reservas con estados
-- ✅ Manejo de errores centralizado
+- ✅ **Documentación interactiva** con Swagger/OpenAPI
+- ✅ **Paginación** en listados de habitaciones y reservas
+- ✅ **Tests automatizados** con Jest (14 tests passing)
+- ✅ **Autenticación JWT** con Argon2
+- ✅ **Sistema de roles** (Admin/Usuario)
+- ✅ **Validación de datos** con Zod
+- ✅ **PostgreSQL Serverless** con Neon
+- ✅ **Validación de fechas** con detección de solapamiento
+- ✅ **TypeScript** con hot reload
 
 ## 🛠️ Tecnologías
 
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Lenguaje:** TypeScript
-- **Base de datos:** PostgreSQL (Neon)
-- **ORM:** Drizzle ORM
-- **Validación:** Zod
-- **Autenticación:** JWT + Argon2
-- **Package Manager:** pnpm
+| Categoría | Tecnología |
+|-----------|------------|
+| **Runtime** | Node.js 20+ |
+| **Framework** | Express.js |
+| **Lenguaje** | TypeScript |
+| **Base de datos** | Neon (PostgreSQL Serverless) |
+| **ORM** | Drizzle ORM |
+| **Validación** | Zod |
+| **Autenticación** | JWT + Argon2 |
+| **Documentación** | Swagger/OpenAPI 3.0 |
+| **Testing** | Jest + Supertest |
+| **Package Manager** | pnpm |
 
 ## 📋 Requisitos previos
 
@@ -71,6 +72,36 @@ DATABASE_URL=postgresql://usuario:password@host/database?sslmode=require
 JWT_SECRET=tu_clave_secreta_muy_segura
 ```
 
+### Explorar la API
+
+- **API Base**: http://localhost:3000
+- **Swagger Docs**: http://localhost:3000/api-docs 📚
+- **Health Check**: http://localhost:3000/health
+
+## 📚 Documentación API (Swagger)
+
+Este proyecto incluye documentación **interactiva y ejecutable** con Swagger UI.
+
+### Acceder a Swagger
+
+Inicia el servidor y visita: **http://localhost:3000/api-docs**
+
+### Características de Swagger
+
+- ✅ **Interfaz interactiva**: Prueba endpoints sin Postman
+- ✅ **Autenticación JWT**: Click en "Authorize" y pega tu token
+- ✅ **Ejemplos de requests**: Cada endpoint tiene ejemplos listos
+- ✅ **Respuestas documentadas**: Ver códigos 200, 400, 401, 404, etc.
+- ✅ **Schemas reutilizables**: User, Room, Booking
+
+### Probar en Swagger
+
+1. **Registrarse**: POST `/api/auth/register`
+2. **Hacer login**: POST `/api/auth/login` → Copiar token
+3. **Autorizar**: Click en "Authorize" 🔒 → Pegar token
+4. **Probar endpoints protegidos**: GET `/api/bookings`, POST `/api/rooms`, etc.
+
+
 ## 🗄️ Base de Datos
 
 Este proyecto utiliza **[Neon](https://neon.tech)** - PostgreSQL Serverless.
@@ -99,199 +130,214 @@ Este proyecto utiliza **[Neon](https://neon.tech)** - PostgreSQL Serverless.
 
 ### Esquema actual
 
-El proyecto incluye tres tablas principales:
+```sql
+users
+├─ id (serial, PK)
+├─ name (varchar)
+├─ email (varchar, unique)
+├─ password (varchar, hashed with Argon2)
+└─ is_admin (boolean)
 
-- **users**: Gestión de usuarios con autenticación
-  - id, name, email, password (hash con Argon2), is_admin
+rooms
+├─ id (serial, PK)
+├─ name (varchar)
+├─ type (enum: Normal, VIP, Presidential)
+├─ price_per_night (numeric)
+└─ is_available (boolean)
 
-- **rooms**: Habitaciones disponibles para reservar
-  - id, name, type (Normal/VIP/Presidential), price_per_night, is_available
-
-- **bookings**: Reservas realizadas por los usuarios
-  - id, user_id, room_id, start_date, end_date, status (PENDING/CONFIRMED/CANCELLED), created_at
-
-### Ejecutar migraciones
-
-```bash
-# Generar migraciones desde el esquema
-pnpm db:generate
-
-# Aplicar migraciones a la base de datos
-pnpm db:migrate
+bookings
+├─ id (serial, PK)
+├─ user_id (int, FK → users)
+├─ room_id (int, FK → rooms)
+├─ start_date (timestamp)
+├─ end_date (timestamp)
+├─ status (enum: PENDING, CONFIRMED, CANCELLED)
+└─ created_at (timestamp)
 ```
-
 ## 🚀 Uso
+## 🔌 API Endpoints
 
-### Modo desarrollo
+### 📖 Autenticación
 
-Inicia el servidor en modo desarrollo con hot reload:
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| POST | `/api/auth/register` | Registrar nuevo usuario | No |
+| POST | `/api/auth/login` | Iniciar sesión (retorna JWT) | No |
+| GET | `/api/auth/me` | Obtener usuario actual | Sí |
 
+### 🏠 Habitaciones
+
+| Método | Ruta | Descripción | Auth | Rol |
+|--------|------|-------------|------|-----|
+| GET | `/api/rooms` | Listar habitaciones (con paginación) | No | - |
+| GET | `/api/rooms/:id` | Obtener habitación por ID | No | - |
+| POST | `/api/rooms` | Crear habitación | Sí | Admin |
+| PUT | `/api/rooms/:id` | Actualizar habitación | Sí | Admin |
+| DELETE | `/api/rooms/:id` | Eliminar habitación | Sí | Admin |
+
+### 📅 Reservas
+
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| GET | `/api/bookings` | Listar mis reservas (con paginación) | Sí |
+| POST | `/api/bookings` | Crear reserva | Sí |
+| GET | `/api/bookings/:id` | Obtener reserva por ID | Sí |
+| PATCH | `/api/bookings/:id` | Cancelar reserva | Sí |
+
+## 📄 Paginación
+
+Los endpoints `GET /api/rooms` y `GET /api/bookings` soportan paginación.
+
+### Parámetros
+
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `page` | number | 1 | Número de página |
+| `limit` | number | 10 | Items por página (máx: 100) |
+
+### Filtros adicionales
+
+**GET /api/rooms:**
+- `type`: Normal, VIP, Presidential
+- `available`: true, false
+
+**GET /api/bookings:**
+- `status`: PENDING, CONFIRMED, CANCELLED
+
+### Ejemplos
 ```bash
-pnpm dev
+# Página 1, 10 items
+GET /api/rooms?page=1&limit=10
+
+# Solo habitaciones VIP disponibles
+GET /api/rooms?type=VIP&available=true
+
+# Mis reservas confirmadas, página 2
+GET /api/bookings?status=CONFIRMED&page=2&limit=5
 ```
 
-El servidor estará disponible en `http://localhost:3000`
-
-### Health Check
-
-Verifica que el servidor esté funcionando:
-
-```bash
-curl http://localhost:3000/health
-```
-
-Respuesta esperada:
+### Respuesta
 ```json
 {
-  "status": "ok"
+  "data": [
+    { "id": 1, "name": "Suite 101", ... },
+    { "id": 2, "name": "Suite 102", ... }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "totalPages": 3
+  }
 }
 ```
 
-## 🔑 API Endpoints
+## 🧪 Testing
 
-### Autenticación
+Este proyecto incluye una suite de tests automatizados con Jest.
 
-#### Registro de usuario
+### Ejecutar tests
 ```bash
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "name": "Juan Pérez",
-  "email": "juan@example.com",
-  "password": "password123"
-}
+# Todos los tests
+pnpm test
 ```
 
-#### Inicio de sesión
-```bash
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "juan@example.com",
-  "password": "password123"
-}
+### Coverage
+```
+Test Suites: 3 passed, 3 total
+Tests:       14 passed, 14 total
 ```
 
-Respuesta:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+**Módulos testeados:**
+- ✅ **Auth middleware** (3 tests)
+  - Verificación de tokens
+  - Flujo register → login → endpoint protegido
+  - Rechazo de tokens inválidos
 
-### Habitaciones
+- ✅ **Rooms endpoints** (4 tests)
+  - Paginación
+  - Filtros (type, available)
+  - Estructura de respuesta
 
-#### Listar todas las habitaciones
-```bash
-GET /api/rooms
-```
-
-#### Obtener habitación por ID
-```bash
-GET /api/rooms/:id
-```
-
-#### Crear habitación (requiere admin)
-```bash
-POST /api/rooms
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "Suite 101",
-  "type": "VIP",
-  "price_per_night": "150.00"
-}
-```
-
-### Reservas
-
-Todas las rutas de reservas requieren autenticación.
-
-#### Crear reserva
-```bash
-POST /api/bookings
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "room_id": 1,
-  "start_date": "2026-02-01T14:00:00",
-  "end_date": "2026-02-05T12:00:00"
-}
-```
-
-#### Listar mis reservas
-```bash
-GET /api/bookings
-Authorization: Bearer <token>
-```
-
-#### Cancelar reserva
-```bash
-PATCH /api/bookings/:id
-Authorization: Bearer <token>
-```
+- ✅ **Bookings** (7 tests)
+  - Creación de reservas
+  - Validación de fechas
+  - **Detección de solapamiento** (crítico)
+  - Reservas consecutivas
+  - Autenticación
 
 ## 📜 Scripts disponibles
 
-| Comando | Descripción |
-|---------|-------------|
-| `pnpm dev` | Inicia el servidor en modo desarrollo |
-| `pnpm db:generate` | Genera archivos de migración desde el esquema |
-| `pnpm db:migrate` | Aplica las migraciones a la base de datos |
+```bash
+pnpm dev          # Desarrollo con hot reload
+pnpm build        # Compilar TypeScript
+pnpm start        # Iniciar en producción
+pnpm test         # Ejecutar tests
+pnpm db:push      # Aplicar schema a DB
+pnpm db:studio    # Abrir Drizzle Studio (GUI)
+pnpm db:generate  # Generar migraciones desde el esquema
+pnpm db:migrate   # Aplicar migraciones a la DB
+```
 
 ## 📁 Estructura del proyecto
 
 ```
-booking-api/
-├── drizzle/                  # Archivos de migración generados
+booking-API/
 ├── src/
 │   ├── db/
-│   │   ├── db.ts             # Configuración de conexión a BD
-│   │   └── schema.ts         # Definición del esquema de tablas
+│   │   ├── db.ts                    # Conexión a Neon
+│   │   └── schema.ts                # Schema de Drizzle
 │   ├── middleware/
-│   │   ├── auth.middleware.ts    # Middleware de autenticación JWT
-│   │   ├── role.middleware.ts    # Middleware de verificación de roles
-│   │   └── validate.middleware.ts # Middleware de validación con Zod
+│   │   ├── auth.middleware.ts       # JWT auth
+│   │   ├── role.middleware.ts       # Role-based access
+│   │   └── validate.middleware.ts   # Zod validation
 │   ├── modules/
-│   │   ├── auth/
-│   │   │   ├── auth.controller.ts  # Controladores de autenticación
-│   │   │   ├── auth.routes.ts      # Rutas de autenticación
-│   │   │   ├── auth.services.ts    # Lógica de negocio de auth
-│   │   │   └── schemas/            # Esquemas de validación
-│   │   ├── booking/
-│   │   │   ├── booking.controller.ts  # Controladores de reservas
-│   │   │   ├── booking.route.ts       # Rutas de reservas
-│   │   │   ├── booking.service.ts     # Lógica de negocio de reservas
-│   │   │   └── schemas/               # Esquemas de validación
-│   │   └── rooms/
-│   │       ├── rooms.controller.ts    # Controladores de habitaciones
-│   │       ├── rooms.router.ts        # Rutas de habitaciones
-│   │       ├── rooms.services.ts      # Lógica de negocio de habitaciones
-│   │       └── schemas/               # Esquemas de validación
+│   │   ├── auth/                    # Auth module
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.routes.ts
+│   │   │   ├── auth.services.ts
+│   │   │   └── schemas/
+│   │   ├── rooms/                   # Rooms module
+│   │   │   ├── rooms.controller.ts
+│   │   │   ├── rooms.router.ts
+│   │   │   ├── rooms.services.ts
+│   │   │   └── schemas/
+│   │   └── booking/                 # Bookings module
+│   │       ├── booking.controller.ts
+│   │       ├── booking.route.ts
+│   │       ├── booking.service.ts
+│   │       └── schemas/
 │   ├── routes/
-│   │   └── main.ts           # Router principal que agrupa todas las rutas
+│   │   └── main.ts                  # Main router
+│   ├── test/                        # Test suite
+│   │   ├── auth.middleware.test.ts
+│   │   ├── rooms.test.ts
+│   │   └── bookings.test.ts
 │   ├── types/
-│   │   └── express.d.ts      # Extensiones de tipos para Express
-│   ├── utils/
-│   │   └── errors.ts         # Utilidades para manejo de errores
-│   └── app.ts                # Punto de entrada de la aplicación
-├── .env                      # Variables de entorno (no incluir en git)
-├── drizzle.config.ts         # Configuración de Drizzle Kit
-├── package.json              # Dependencias y scripts
-├── tsconfig.json             # Configuración de TypeScript
-└── README.md                 # Este archivo
+│   │   └── express.d.ts             # Type extensions
+│   ├── swagger.ts                   # Swagger config
+│   ├── app.ts                       # Express app
+│   └── server.ts                    # Entry point
+├── .env.example                     # Environment template
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
 ## 🔒 Seguridad
 
-- Las contraseñas se hashean con Argon2 antes de almacenarse
-- Los endpoints protegidos requieren token JWT válido
-- Validación de datos de entrada con Zod
-- Los tokens JWT incluyen información del usuario (id, email, is_admin)
+- 🔐 Contraseñas hasheadas con **Argon2** (más seguro que bcrypt)
+- 🎫 Autenticación con **JWT** (tokens válidos por 7 días)
+- ✅ Validación de datos con **Zod**
+- 🛡️ Middleware de roles (Admin/Usuario)
+
+
+## 🔗 Enlaces Útiles
+
+- [Swagger Docs](http://localhost:3000/api-docs) - Documentación interactiva
+- [Neon Console](https://console.neon.tech/) - Administrar tu DB
+- [Drizzle Studio](https://orm.drizzle.team/drizzle-studio/overview) - GUI para DB
+
 
 
 
@@ -301,4 +347,4 @@ ISC
 
 ---
 
-Desarrollado con ❤️ por darthBelial
+⭐ **Desarrollado con ❤️ por [Nico Guerrero](https://github.com/NicoGuerrero11)**
