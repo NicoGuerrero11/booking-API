@@ -16,8 +16,11 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         return res.status(401).json({ message: 'Authorization header missing or malformed' });
     }
     const token = authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ message: 'Invalid token format' });
+    }
     try {
-        const verifyToken = jwt.verify(token, JWT_SECRET) as JwtPayload;
+        const verifyToken = jwt.verify(token, JWT_SECRET!) as JwtPayload;
 
         const result = await db
             .select({
